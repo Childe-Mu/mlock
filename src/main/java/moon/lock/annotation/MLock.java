@@ -47,7 +47,7 @@ public @interface MLock {
      *
      * @return key数组
      */
-    String[] key() default {};
+    String[] keys() default {};
 
     /**
      * 锁等待最长时间，单位ms
