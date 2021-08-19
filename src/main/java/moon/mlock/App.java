@@ -1,4 +1,4 @@
-package moon.lock;
+package moon.mlock;
 
 /**
  * Hello world!

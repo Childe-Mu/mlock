@@ -1,7 +1,7 @@
-package moon.lock.annotation;
+package moon.mlock.annotation;
 
-import moon.lock.common.enums.LockTypeEnum;
-import moon.lock.common.exception.MLockException;
+import moon.mlock.common.enums.LockTypeEnum;
+import moon.mlock.common.exception.MLockException;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

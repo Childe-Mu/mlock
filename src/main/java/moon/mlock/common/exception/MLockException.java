@@ -1,4 +1,4 @@
-package moon.lock.common.exception;
+package moon.mlock.common.exception;
 
 /**
  * 锁异常类

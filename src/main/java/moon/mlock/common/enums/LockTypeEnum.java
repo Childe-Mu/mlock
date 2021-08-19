@@ -1,4 +1,4 @@
-package moon.lock.common.enums;
+package moon.mlock.common.enums;
 
 import java.util.Objects;
 

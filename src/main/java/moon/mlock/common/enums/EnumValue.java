@@ -1,4 +1,4 @@
-package moon.lock.common.enums;
+package moon.mlock.common.enums;
 
 /**
  * 公共枚举方法接口
