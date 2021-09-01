@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
  */
 public interface Lock extends AutoCloseable {
     /**
-     * 加锁
+     * 尝试加锁
      *
      * @param time 超时时间
      * @param unit 超时时间单位

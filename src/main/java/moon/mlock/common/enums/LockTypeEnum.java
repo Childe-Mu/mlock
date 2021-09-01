@@ -3,7 +3,7 @@ package moon.mlock.common.enums;
 import java.util.Objects;
 
 /**
- * 所类型枚举
+ * 锁类型枚举
  *
  * @author moon
  */
@@ -19,12 +19,12 @@ public enum LockTypeEnum implements EnumValue {
      *
      * @see <a href="https://redis.io/commands/set">Redis Documentation: SET</a>
      */
-    LOCK_REDIS(1, "redis"),
+    LOCK_REDIS(2, "redis"),
 
     /**
      * 强制redis锁
      */
-    LOCK_REDIS_FORCE(1, "redis_force"),
+    LOCK_REDIS_FORCE(3, "redis_force"),
     ;
 
     /**
@@ -62,8 +62,13 @@ public enum LockTypeEnum implements EnumValue {
         return this.name;
     }
 
-    @Override
-    public EnumValue getEnumByIndex(Integer index) {
+    /**
+     * 根据index获取锁类型枚举
+     *
+     * @param index index
+     * @return 锁类型枚举
+     */
+    public static LockTypeEnum getEnumByIndex(Integer index) {
         if (Objects.isNull(index)) {
             return null;
         }

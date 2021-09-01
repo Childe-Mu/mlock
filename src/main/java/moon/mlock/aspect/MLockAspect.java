@@ -3,6 +3,8 @@ package moon.mlock.aspect;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import moon.mlock.annotation.MLock;
+import moon.mlock.common.enums.LockTypeEnum;
+import moon.mlock.common.exception.GetLockException;
 import moon.mlock.lock.Lock;
 import moon.mlock.utils.AspectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -17,10 +19,14 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.util.Assert;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -74,14 +80,11 @@ public class MLockAspect {
      * 分布式锁环绕逻辑
      *
      * @param joinPoint 切面的切入点信息
-     * @return
      * @throws Throwable
      */
     @Around("mLockAspect()")
     public Object doAround(ProceedingJoinPoint joinPoint) throws Throwable {
         String lockKey = null;
-        Object result = null;
-        boolean lockResult = false;
         Lock lock = null;
         try {
             // 切入点处的签名
@@ -89,11 +92,45 @@ public class MLockAspect {
             Method method = methodSignature.getMethod();
 
             MLock mLock = getMLock(method);
-            lockKey = getLocalKey(joinPoint, mLock);
-        } catch (Exception e) {
+            Assert.notNull(mLock, "获取mLock注解失败！");
 
+            lockKey = getLocalKey(joinPoint, mLock);
+            String domain = mLock.domain();
+            LockTypeEnum lockTypeEnum = mLock.lockType();
+            long waitTime = mLock.waitTime();
+            lock = MLockFactory.getLock(lockTypeEnum, domain, lockKey);
+
+            //加锁
+            boolean lockResult = lock.tryLock(waitTime, TimeUnit.MILLISECONDS);
+            String lockName = lock.getClass().getSimpleName();
+            log.info("domain={} lockKey={} lockName={} lockResult={} methodName={}", domain, lockKey, lockName, lockResult, method.getName());
+
+            if (lockResult) {
+                // 继续下一个目标方法调用
+                return joinPoint.proceed();
+            } else if (mLock.throwEx()) {
+                Class<? extends Exception> ex = mLock.ex();
+                // 获取入参为string的异常构造函数
+                Constructor<? extends Exception> constructor = ex.getConstructor(String.class);
+                throw constructor.newInstance(mLock.exMsg());
+            } else {
+                return null;
+            }
+        } catch (GetLockException e) {
+            log.error("MLockAspect GetLockException, lockKey={}", lockKey, e);
+            throw e;
+        } catch (RuntimeException e) {
+            log.error("MLockAspect BusinessRuntimeException, lockKey={}", lockKey, e);
+            throw e;
+        } catch (Exception e) {
+            log.error("MLockAspect Exception, lockKey={}", lockKey, e);
+            throw e;
+        } finally {
+            //释放锁
+            if (Objects.nonNull(lock)) {
+                lock.unlock();
+            }
         }
-        return null;
     }
 
     /**
