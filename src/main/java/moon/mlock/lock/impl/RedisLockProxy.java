@@ -1,10 +1,12 @@
 package moon.mlock.lock.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import moon.mlock.common.consts.StringConst;
 import moon.mlock.config.MLockProperties;
 import moon.mlock.utils.LocalUtils;
 import moon.mlock.utils.SpringContextUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -17,25 +19,28 @@ import java.util.concurrent.locks.LockSupport;
  * @author moon
  */
 @Slf4j
+@Component
 public class RedisLockProxy {
 
     /**
      * redisTemplate实例
      */
-    private static StringRedisTemplate redisTemplate;
+    private final StringRedisTemplate redisTemplate;
 
     /**
      * 获取锁默认等待时间，单位毫秒
      */
-    private final static long DEFAULT_WAIT_MILLIS = 1000L;
+    private static final long DEFAULT_WAIT_MILLIS = 1000L;
+
     /**
      * redis锁-重试等待时间，单位毫秒
      */
-    private final static int REDIS_LOCK_RETRY_AWAIT_MILLIS = 200;
+    private static final int REDIS_LOCK_RETRY_AWAIT_MILLIS = 200;
+
     /**
      * redis锁-lockKey过期时间，单位毫秒
      */
-    private final static long REDIS_LOCK_KEY_EXPIRE_MILLIS = 60000;
+    private static final long REDIS_LOCK_KEY_EXPIRE_MILLIS = 60000L;
 
     public RedisLockProxy(MLockProperties mLockProperties) {
         // 具体如何取redisTemplate实例，需要根据项目具体设置，通常是 集群名称+RedisTemplate，如ShopRedisTemplate
@@ -106,5 +111,31 @@ public class RedisLockProxy {
         String value = key + StringConst.UNDERLINE + System.nanoTime() + StringConst.UNDERLINE + LocalUtils.getLocalIp();
         boolean result = redisTemplate.opsForValue().setIfAbsent(key, value, REDIS_LOCK_KEY_EXPIRE_MILLIS, TimeUnit.MILLISECONDS);
         return result ? value : null;
+    }
+
+    /**
+     * 给对应key的redis锁续约
+     *
+     * @param key   redis锁 key
+     * @param value redis锁 value
+     * @return 续约结果 true：续约成功，false：续约失败
+     */
+    public boolean renewLockKey(String key, String value) {
+        String res = redisTemplate.opsForValue().get(key);
+        // 判断值是否是该线程设置的，如果不是则不续约
+        if (!Objects.equals(value, res)) {
+            return false;
+        }
+        return redisTemplate.expire(key, REDIS_LOCK_KEY_EXPIRE_MILLIS, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * 检查redis锁
+     *
+     * @param key redis锁的key
+     * @return true:成功，也就是锁没有被其他占有，false:失败
+     */
+    public boolean checkRedisLock(String key) {
+        return redisTemplate.hasKey(key);
     }
 }

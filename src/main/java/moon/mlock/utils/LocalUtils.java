@@ -1,6 +1,7 @@
 package moon.mlock.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -35,7 +36,7 @@ public class LocalUtils {
      * 此方法为重量级的方法，不要频繁调用
      */
     public static String getLocalIp() {
-        if (LOCAL_IP != null) {
+        if (StringUtils.isNotEmpty(LOCAL_IP)) {
             return LOCAL_IP;
         }
         try {
@@ -59,7 +60,7 @@ public class LocalUtils {
             }
             return ip;
         } catch (Exception e) {
-            log.error("", e);
+            log.error("获取本机ip地址，异常：", e);
             return null;
         }
     }

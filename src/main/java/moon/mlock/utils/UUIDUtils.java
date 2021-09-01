@@ -4,7 +4,7 @@ package moon.mlock.utils;
  * @author moon
  */
 public class UUIDUtils {
-    public static String getUuId() {
+    public static String getUuid() {
         return null;
     }
 }

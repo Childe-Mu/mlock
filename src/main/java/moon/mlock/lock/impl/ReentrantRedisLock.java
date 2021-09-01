@@ -2,6 +2,7 @@ package moon.mlock.lock.impl;
 
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
+import moon.mlock.common.consts.StringConst;
 import moon.mlock.lock.Lock;
 import moon.mlock.utils.SpringUtils;
 import moon.mlock.utils.ThreadUtils;
@@ -25,17 +26,17 @@ public class ReentrantRedisLock implements Lock {
     /**
      * redis lock 代理
      */
-    private RedisLockProxy proxy;
+    private final RedisLockProxy proxy;
 
     /**
      * 业务领域
      */
-    private String domain;
+    private final String domain;
 
     /**
      * redis锁的key
      */
-    private String key;
+    private final String key;
 
     /**
      * 加锁结果
@@ -45,19 +46,19 @@ public class ReentrantRedisLock implements Lock {
     /**
      * 锁持有的key，格式：线程名称_锁key
      */
-    private String holderKey;
+    private final String holderKey;
 
     /**
      * 锁id，使用UUID
      */
-    private String id;
+    private final String id;
 
     public ReentrantRedisLock(String domain, String key) {
         this.proxy = SpringUtils.getObject(RedisLockProxy.class);
         this.domain = domain;
         this.key = key;
         this.result = false;
-        this.id = UUIDUtils.getUuId();
+        this.id = UUIDUtils.getUuid();
         this.holderKey = ThreadUtils.getThreadName() + StringConst.UNDERLINE + this.key;
     }
 
@@ -99,6 +100,7 @@ public class ReentrantRedisLock implements Lock {
         if (isReentrancy) {
             return true;
         }
+        // lockValue = key_系统纳秒数_本地机器ip
         String lockValue = proxy.tryRedisLock(key, time, unit);
         if (Objects.nonNull(lockValue)) {
             LockHolder lockHolder = new LockHolder(lockValue);
@@ -139,7 +141,14 @@ public class ReentrantRedisLock implements Lock {
      */
     @Override
     public boolean checkLock() {
-        return false;
+        try {
+            boolean checkLockResult = proxy.checkRedisLock(key);
+            log.info("checkLock: domain={},key={},id={},checkLockResult={}", domain, key, id, checkLockResult);
+            return checkLockResult;
+        } catch (Exception e) {
+            log.error("checkLock Exception", e);
+            return false;
+        }
     }
 
     /**
@@ -159,9 +168,10 @@ public class ReentrantRedisLock implements Lock {
         /**
          * 可重入锁计数器
          */
-        public final AtomicInteger count = new AtomicInteger(1);
+        public final AtomicInteger count;
 
         private LockHolder(String value) {
+            this.count = new AtomicInteger(1);
             this.value = value;
         }
     }

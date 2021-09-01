@@ -1,4 +1,4 @@
-package moon.mlock.lock.impl;
+package moon.mlock.common.consts;
 
 /**
  * 常量类
@@ -19,7 +19,7 @@ public class StringConst {
     /**
      * 字符 '0'
      */
-    public final static String STR_0 = "0";
+    public static final String STR_0 = "0";
 
 
     /**
