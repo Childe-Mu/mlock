@@ -1,12 +1,13 @@
-package moon.mlock.lock.impl;
+package moon.mlock.proxy;
 
 import lombok.extern.slf4j.Slf4j;
 import moon.mlock.common.consts.StringConst;
 import moon.mlock.config.MLockProperties;
 import moon.mlock.utils.LocalUtils;
 import moon.mlock.utils.SpringContextUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -19,7 +20,7 @@ import java.util.concurrent.locks.LockSupport;
  * @author moon
  */
 @Slf4j
-@Component
+@Service
 public class RedisLockProxy {
 
     /**
@@ -137,5 +138,20 @@ public class RedisLockProxy {
      */
     public boolean checkRedisLock(String key) {
         return redisTemplate.hasKey(key);
+    }
+
+    /**
+     * 解锁
+     * <p>
+     * [注]：这里不用考虑删除失败的问题，因为即使删除失败，锁也会在很短的时间内过期
+     *
+     * @param key   redis锁 key
+     * @param value redis锁 value
+     */
+    public void unlock(String key, String value) {
+        String val = redisTemplate.opsForValue().get(key);
+        if (StringUtils.equals(value, val)) {
+            redisTemplate.delete(key);
+        }
     }
 }

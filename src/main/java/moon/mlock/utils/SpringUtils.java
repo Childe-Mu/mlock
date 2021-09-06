@@ -1,6 +1,6 @@
 package moon.mlock.utils;
 
-import moon.mlock.lock.impl.RedisLockProxy;
+import moon.mlock.proxy.RedisLockProxy;
 
 /**
  * @author moon

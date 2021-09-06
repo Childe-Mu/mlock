@@ -4,6 +4,8 @@ import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import moon.mlock.common.consts.StringConst;
 import moon.mlock.lock.Lock;
+import moon.mlock.proxy.RedisLockProxy;
+import moon.mlock.task.RedisLockKeyRenewTask;
 import moon.mlock.utils.SpringUtils;
 import moon.mlock.utils.ThreadUtils;
 import moon.mlock.utils.UUIDUtils;
@@ -83,6 +85,58 @@ public class ReentrantRedisLock implements Lock {
     }
 
     /**
+     * 解锁
+     */
+    @Override
+    public void unlock() {
+        try {
+            if (!result) {
+                return;
+            }
+            LockHolder holder = REDIS_LOCK_HOLDERS_MAP.get(holderKey);
+            if (Objects.isNull(holder)) {
+                throw new IllegalMonitorStateException("没有持有锁：" + key);
+            }
+            int newCount = holder.count.decrementAndGet();
+            if (newCount == 0) {
+                REDIS_LOCK_HOLDERS_MAP.remove(holderKey);
+                RedisLockKeyRenewTask.removeLockKey(key);
+                proxy.unlock(key, holder.value);
+                log.info("domain={},key={},id={},unlock success", domain, key, id);
+            } else if (newCount < 0) {
+                throw new IllegalMonitorStateException("锁计数器为负: " + key);
+            }
+        } catch (Exception e) {
+            log.error("domain={},key={},id={},unlock ex:", domain, key, id, e);
+        }
+    }
+
+    /**
+     * 检查锁，而不进行加锁操作，既无需解锁
+     *
+     * @return 检查锁结果，true=成功，也就是锁没有被其他占有，false=失败
+     */
+    @Override
+    public boolean checkLock() {
+        try {
+            boolean checkLockResult = proxy.checkRedisLock(key);
+            log.info("checkLock: domain={},key={},id={},checkLockResult={}", domain, key, id, checkLockResult);
+            return checkLockResult;
+        } catch (Exception e) {
+            log.error("checkLock Exception", e);
+            return false;
+        }
+    }
+
+    /**
+     * 关闭资源，在退出try -with-resources 块时自动调用
+     */
+    @Override
+    public void close() {
+        this.unlock();
+    }
+
+    /**
      * 尝试加锁
      *
      * @param time 等待锁最长时间
@@ -124,39 +178,6 @@ public class ReentrantRedisLock implements Lock {
             return true;
         }
         return false;
-    }
-
-    /**
-     * 解锁
-     */
-    @Override
-    public void unlock() {
-
-    }
-
-    /**
-     * 检查锁，而不进行加锁操作，既无需解锁
-     *
-     * @return 检查锁结果，true=成功，也就是锁没有被其他占有，false=失败
-     */
-    @Override
-    public boolean checkLock() {
-        try {
-            boolean checkLockResult = proxy.checkRedisLock(key);
-            log.info("checkLock: domain={},key={},id={},checkLockResult={}", domain, key, id, checkLockResult);
-            return checkLockResult;
-        } catch (Exception e) {
-            log.error("checkLock Exception", e);
-            return false;
-        }
-    }
-
-    /**
-     * 关闭资源，在退出try -with-resources 块时自动调用
-     */
-    @Override
-    public void close() {
-        this.unlock();
     }
 
     private static class LockHolder {

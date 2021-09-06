@@ -1,4 +1,4 @@
-package moon.mlock.aspect;
+package moon.mlock.factory;
 
 import moon.mlock.common.enums.LockTypeEnum;
 import moon.mlock.common.exception.GetLockException;
@@ -21,7 +21,7 @@ public class MLockFactory {
      */
     private static MLockProperties mLockProperties;
 
-    public MLockFactory(MLockProperties mLockProperties) {
+    private MLockFactory(MLockProperties mLockProperties) {
         MLockFactory.mLockProperties = mLockProperties;
     }
 

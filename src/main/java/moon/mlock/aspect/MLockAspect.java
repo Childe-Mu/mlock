@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import moon.mlock.annotation.MLock;
 import moon.mlock.common.enums.LockTypeEnum;
 import moon.mlock.common.exception.GetLockException;
+import moon.mlock.factory.MLockFactory;
 import moon.mlock.lock.Lock;
 import moon.mlock.utils.AspectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -23,11 +24,9 @@ import org.springframework.util.Assert;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * 分布式锁AOP切入点.
@@ -42,19 +41,19 @@ public class MLockAspect {
     /**
      * Spring EL表达式解析器
      */
-    private static ExpressionParser parser = new SpelExpressionParser();
+    private static final ExpressionParser parser = new SpelExpressionParser();
 
     /**
      * 获取方法参数
      */
-    private static LocalVariableTableParameterNameDiscoverer discoverer = new LocalVariableTableParameterNameDiscoverer();
+    private static final LocalVariableTableParameterNameDiscoverer discoverer = new LocalVariableTableParameterNameDiscoverer();
 
     /**
      * 缓存参数名称
      * <p>
      * key:方法全量名称字符串，value:方法的参数名称列表
      */
-    private static Map<String, String[]> mLockAspectParamNamesCache = Maps.newConcurrentMap();
+    private static final Map<String, String[]> mLockAspectParamNamesCache = Maps.newConcurrentMap();
 
     /**
      * 方法与参数缓存
@@ -67,20 +66,21 @@ public class MLockAspect {
      * <p>
      * value = doAround(org.aspectj.lang.ProceedingJoinPoint)
      */
-    private static Map<String, String> mLockMethodParamsCache = Maps.newConcurrentMap();
+    private static final Map<String, String> mLockMethodParamsCache = Maps.newConcurrentMap();
 
     /**
      * 分布式锁切入点
      */
     @Pointcut("@annotation(moon.mlock.annotation.MLock)")
     public void mLockAspect() {
+        // do nothing
     }
 
     /**
      * 分布式锁环绕逻辑
      *
      * @param joinPoint 切面的切入点信息
-     * @throws Throwable
+     * @throws Throwable 异常
      */
     @Around("mLockAspect()")
     public Object doAround(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -142,8 +142,8 @@ public class MLockAspect {
      */
     private String getLocalKey(ProceedingJoinPoint joinPoint, MLock mLock) {
         String[] keys = mLock.keys();
-        Object[] keyValues = executeTemplate(keys, joinPoint);
-        String key = Arrays.stream(keyValues).map(String::valueOf).collect(Collectors.joining("_"));
+        String[] keyValues = executeTemplate(keys, joinPoint);
+        String key = String.join("_", keyValues);
         return mLock.domain() + "_" + key;
     }
 
@@ -154,7 +154,7 @@ public class MLockAspect {
      * @param joinPoint 切面的切入点信息
      * @return 表达式执行结果集
      */
-    private Object[] executeTemplate(String[] template, ProceedingJoinPoint joinPoint) {
+    private String[] executeTemplate(String[] template, ProceedingJoinPoint joinPoint) {
         // 获取方法全量签名
         String methodLongName = joinPoint.getSignature().toLongString();
         // 参数名称数组
@@ -179,11 +179,10 @@ public class MLockAspect {
             }
         }
 
-        Object[] result = new Object[template.length];
-
+        String[] result = new String[template.length];
         for (int i = 0; i < template.length; i++) {
             Expression expression = parser.parseExpression(template[i]);
-            Object value = expression.getValue(context, Object.class);
+            String value = expression.getValue(context, String.class);
             result[i] = value;
         }
         return result;

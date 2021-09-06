@@ -1,7 +1,8 @@
-package moon.mlock.lock.impl;
+package moon.mlock.task;
 
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
+import moon.mlock.proxy.RedisLockProxy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 
