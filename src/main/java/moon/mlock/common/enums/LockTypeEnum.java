@@ -69,12 +69,11 @@ public enum LockTypeEnum implements EnumValue {
      * @return 锁类型枚举
      */
     public static LockTypeEnum getEnumByIndex(Integer index) {
-        if (Objects.isNull(index)) {
-            return null;
-        }
-        for (LockTypeEnum lockTypeEnum : LockTypeEnum.values()) {
-            if (Objects.equals(index, lockTypeEnum.getIndex())) {
-                return lockTypeEnum;
+        if (Objects.nonNull(index)) {
+            for (LockTypeEnum lockTypeEnum : LockTypeEnum.values()) {
+                if (Objects.equals(index, lockTypeEnum.getIndex())) {
+                    return lockTypeEnum;
+                }
             }
         }
         return null;

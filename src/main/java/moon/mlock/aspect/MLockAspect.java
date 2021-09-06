@@ -41,19 +41,19 @@ public class MLockAspect {
     /**
      * Spring EL表达式解析器
      */
-    private static final ExpressionParser parser = new SpelExpressionParser();
+    private final ExpressionParser parser = new SpelExpressionParser();
 
     /**
      * 获取方法参数
      */
-    private static final LocalVariableTableParameterNameDiscoverer discoverer = new LocalVariableTableParameterNameDiscoverer();
+    private final LocalVariableTableParameterNameDiscoverer discoverer = new LocalVariableTableParameterNameDiscoverer();
 
     /**
      * 缓存参数名称
      * <p>
      * key:方法全量名称字符串，value:方法的参数名称列表
      */
-    private static final Map<String, String[]> mLockAspectParamNamesCache = Maps.newConcurrentMap();
+    private final Map<String, String[]> mLockAspectParamNamesCache = Maps.newConcurrentMap();
 
     /**
      * 方法与参数缓存
@@ -66,7 +66,7 @@ public class MLockAspect {
      * <p>
      * value = doAround(org.aspectj.lang.ProceedingJoinPoint)
      */
-    private static final Map<String, String> mLockMethodParamsCache = Maps.newConcurrentMap();
+    private final Map<String, String> mLockMethodParamsCache = Maps.newConcurrentMap();
 
     /**
      * 分布式锁切入点
