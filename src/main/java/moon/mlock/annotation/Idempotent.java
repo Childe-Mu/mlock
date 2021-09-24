@@ -1,7 +1,6 @@
 package moon.mlock.annotation;
 
-import moon.mlock.common.enums.LockTypeEnum;
-import moon.mlock.common.exception.MLockException;
+import moon.mlock.common.exception.IdempotentException;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -10,36 +9,35 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 分布式锁注解
+ * 分布式幂等注解
  *
  * @author moon
  */
-@Target({ElementType.METHOD})
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface MLock {
+public @interface Idempotent {
+
     /**
-     * 锁类型
+     * 分布式幂等保留最长时间，单位s
      * <p>
-     * 非必须，默认 redis
+     * 非必须，默认5分钟
      *
-     * @return 锁类型
+     * @return 分布式幂等过期时间
      */
-    LockTypeEnum lockType() default LockTypeEnum.LOCK_REDIS;
+    long ttl() default 300;
 
     /**
      * 业务领域
      * <p>
-     * 相当于redis key的前缀
-     * <p>
-     * 必须，默认 m_lock
+     * 非必须，表示一种业务场景
      *
      * @return 业务领域
      */
-    String domain() default "m_lock";
+    String domain() default "idempotent";
 
     /**
-     * key组成
+     * key的组成数组
      * <p>
      * 拼接在domain后面，即 domain_key1_key2..._keyn，共同组成redis key
      * <p>
@@ -48,15 +46,6 @@ public @interface MLock {
      * @return key数组
      */
     String[] keys() default {};
-
-    /**
-     * 锁等待最长时间，单位ms
-     * <p>
-     * 非必须，默认 0ms，即不尝试重新获取锁
-     *
-     * @return 锁等待最长时间
-     */
-    long waitTime() default 0;
 
     /**
      * 失败时是否抛出异常
@@ -74,14 +63,14 @@ public @interface MLock {
      *
      * @return 抛出的异常类
      */
-    Class<? extends MLockException> ex() default MLockException.class;
+    Class<? extends IdempotentException> ex() default IdempotentException.class;
 
     /**
      * 抛出Exception的message
      * <p>
-     * 非必须，默认 其他操作正在处理中，请稍后再试！
+     * 非必须，默认 已处理，请不要重复处理！
      *
-     * @return message
+     * @return 异常提示信息
      */
-    String exMsg() default "其他操作正在处理中，请稍后再试！";
+    String exMsg() default "已处理，请不要重复处理！";
 }

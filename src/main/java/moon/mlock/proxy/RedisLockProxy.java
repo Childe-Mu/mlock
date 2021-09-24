@@ -71,7 +71,7 @@ public class RedisLockProxy {
         while (Objects.isNull(value)) {
             log.debug("第{}次，开始获取锁，lockKey={}", i, key);
             long curTime = System.currentTimeMillis();
-            value = createRedisLock(key);
+            value = createRedisLock(key, REDIS_LOCK_KEY_EXPIRE_MILLIS, TimeUnit.MILLISECONDS);
             if (Objects.nonNull(value)) {
                 log.debug("第{}次，获取锁成功，耗时：{}ms", i, (System.currentTimeMillis() - curTime));
             }
@@ -88,6 +88,18 @@ public class RedisLockProxy {
     }
 
     /**
+     * 尝试添加分布式幂等锁
+     *
+     * @param key     key
+     * @param timeout 超时时间(单位:s)
+     * @return 加锁结果
+     */
+    public boolean tryRedisIdempotent(String key, long timeout) {
+        String value = createRedisLock(key, timeout, TimeUnit.SECONDS);
+        return Objects.nonNull(value);
+    }
+
+    /**
      * 创建redis锁
      *
      * @param key     锁Key
@@ -98,19 +110,6 @@ public class RedisLockProxy {
     private String createRedisLock(String key, long timeout, TimeUnit unit) {
         String value = key + StringConst.UNDERLINE + System.nanoTime() + StringConst.UNDERLINE + LocalUtils.getLocalIp();
         boolean result = redisTemplate.opsForValue().setIfAbsent(key, value, timeout, unit);
-        return result ? value : null;
-    }
-
-
-    /**
-     * 创建redis锁，使用默认过期时间
-     *
-     * @param key 锁Key
-     * @return 成功返回锁Value，失败返回null
-     */
-    private String createRedisLock(String key) {
-        String value = key + StringConst.UNDERLINE + System.nanoTime() + StringConst.UNDERLINE + LocalUtils.getLocalIp();
-        boolean result = redisTemplate.opsForValue().setIfAbsent(key, value, REDIS_LOCK_KEY_EXPIRE_MILLIS, TimeUnit.MILLISECONDS);
         return result ? value : null;
     }
 
@@ -153,5 +152,16 @@ public class RedisLockProxy {
         if (StringUtils.equals(value, val)) {
             redisTemplate.delete(key);
         }
+    }
+
+    /**
+     * 解锁
+     * <p>
+     * [注]：这里不用考虑删除失败的问题，因为即使删除失败，锁也会在很短的时间内过期
+     *
+     * @param key redis锁 key
+     */
+    public void unlock(String key) {
+        redisTemplate.delete(key);
     }
 }

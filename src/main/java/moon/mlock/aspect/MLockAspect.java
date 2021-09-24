@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import moon.mlock.annotation.MLock;
 import moon.mlock.common.enums.LockTypeEnum;
 import moon.mlock.common.exception.GetLockException;
+import moon.mlock.common.exception.MLockException;
 import moon.mlock.factory.MLockFactory;
 import moon.mlock.lock.Lock;
 import moon.mlock.utils.AspectUtils;
@@ -27,6 +28,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * 分布式锁AOP切入点.
@@ -92,7 +94,7 @@ public class MLockAspect {
             Method method = methodSignature.getMethod();
 
             MLock mLock = getMLock(method);
-            Assert.notNull(mLock, "获取mLock注解失败！");
+            Assert.notNull(mLock, "获取@MLock注解失败！");
 
             lockKey = getLocalKey(joinPoint, mLock);
             String domain = mLock.domain();
@@ -119,8 +121,8 @@ public class MLockAspect {
         } catch (GetLockException e) {
             log.error("MLockAspect GetLockException, lockKey={}", lockKey, e);
             throw e;
-        } catch (RuntimeException e) {
-            log.error("MLockAspect BusinessRuntimeException, lockKey={}", lockKey, e);
+        } catch (MLockException e) {
+            log.error("MLockAspect Business Exception, lockKey={}", lockKey, e);
             throw e;
         } catch (Exception e) {
             log.error("MLockAspect Exception, lockKey={}", lockKey, e);
@@ -150,7 +152,7 @@ public class MLockAspect {
     /**
      * 执行表达式模板并返回结果
      *
-     * @param template  需要执行的表达式魔板
+     * @param template  需要执行的表达式模板
      * @param joinPoint 切面的切入点信息
      * @return 表达式执行结果集
      */
@@ -158,15 +160,8 @@ public class MLockAspect {
         // 获取方法全量签名
         String methodLongName = joinPoint.getSignature().toLongString();
         // 参数名称数组
-        String[] paramNames;
-        if (mLockAspectParamNamesCache.containsKey(methodLongName)) {
-            paramNames = mLockAspectParamNamesCache.get(methodLongName);
-        } else {
-            Method method = getMethod(joinPoint);
-            paramNames = discoverer.getParameterNames(method);
-            //缓存参数名称
-            mLockAspectParamNamesCache.put(methodLongName, paramNames);
-        }
+        Function<String, String[]> function = o -> discoverer.getParameterNames(getMethod(joinPoint));
+        String[] paramNames = mLockAspectParamNamesCache.computeIfAbsent(methodLongName, function);
 
         // SpEL 的标准计算上下文
         StandardEvaluationContext context = new StandardEvaluationContext();
@@ -196,32 +191,17 @@ public class MLockAspect {
      */
     private Method getMethod(ProceedingJoinPoint joinPoint) {
         String methodLongName = joinPoint.getSignature().toLongString();
-        String methodNameAndParams;
         // 方法名称参数已缓存，则直接从缓存获取，反之则解析名称参数，并加入缓存
-        if (mLockMethodParamsCache.containsKey(methodLongName)) {
-            methodNameAndParams = mLockMethodParamsCache.get(methodLongName);
-        } else {
-            methodNameAndParams = AspectUtils.getMethodNameAndParams(methodLongName);
-            mLockMethodParamsCache.put(methodLongName, methodNameAndParams);
-        }
+        String methodNameAndParams = mLockMethodParamsCache.computeIfAbsent(methodLongName, AspectUtils::getMethodNameAndParams);
         // 获取切点所在类的全部方法列表
         Method[] methods = joinPoint.getTarget().getClass().getMethods();
-        Method method = null;
-        for (Method m : methods) {
-            String targetMethodLongName = m.toString();
-            String targetMethodAndParam;
-            if (mLockMethodParamsCache.containsKey(targetMethodLongName)) {
-                targetMethodAndParam = mLockMethodParamsCache.get(targetMethodLongName);
-            } else {
-                targetMethodAndParam = AspectUtils.getMethodNameAndParams(targetMethodLongName);
-                mLockMethodParamsCache.put(targetMethodLongName, targetMethodAndParam);
-            }
+        for (Method method : methods) {
+            String targetMethodAndParam = mLockMethodParamsCache.computeIfAbsent(method.toString(), AspectUtils::getMethodNameAndParams);
             if (StringUtils.equals(methodNameAndParams, targetMethodAndParam)) {
-                method = m;
-                break;
+                return method;
             }
         }
-        return method;
+        return null;
     }
 
     /**
