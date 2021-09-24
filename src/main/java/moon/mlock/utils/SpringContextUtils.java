@@ -69,13 +69,13 @@ public class SpringContextUtils implements ApplicationContextAware {
         if (applicationContext == null) {
             throw new RuntimeException("spring初始化失败");
         }
-        return applicationContext.getEnvironment().getProperty("joymo.application.businessLine");
+        return applicationContext.getEnvironment().getProperty("application.businessLine");
     }
 
     public static String getProjectName() {
         if (applicationContext == null) {
             throw new RuntimeException("spring初始化失败");
         }
-        return applicationContext.getEnvironment().getProperty("joymo.application.name");
+        return applicationContext.getEnvironment().getProperty("application.name");
     }
 }

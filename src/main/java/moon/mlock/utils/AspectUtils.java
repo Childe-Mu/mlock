@@ -6,6 +6,8 @@ package moon.mlock.utils;
  * @author moon
  */
 public class AspectUtils {
+    private AspectUtils() {
+    }
 
     /**
      * 获取方法名称和参数字符串
