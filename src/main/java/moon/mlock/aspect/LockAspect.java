@@ -2,12 +2,12 @@ package moon.mlock.aspect;
 
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
-import moon.mlock.annotation.MLock;
+import moon.mlock.annotation.Lock;
 import moon.mlock.common.enums.LockTypeEnum;
 import moon.mlock.common.exception.GetLockException;
-import moon.mlock.common.exception.MLockException;
-import moon.mlock.factory.MLockFactory;
-import moon.mlock.lock.Lock;
+import moon.mlock.common.exception.LockException;
+import moon.mlock.factory.LockFactory;
+import moon.mlock.lock.ILock;
 import moon.mlock.utils.AspectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -38,7 +38,7 @@ import java.util.function.Function;
 @Aspect
 @Order(value = Integer.MIN_VALUE)
 @Slf4j
-public class MLockAspect {
+public class LockAspect {
 
     /**
      * Spring EL表达式解析器
@@ -55,25 +55,25 @@ public class MLockAspect {
      * <p>
      * key:方法全量名称字符串，value:方法的参数名称列表
      */
-    private final Map<String, String[]> mLockAspectParamNamesCache = Maps.newConcurrentMap();
+    private final Map<String, String[]> lockAspectParamNamesCache = Maps.newConcurrentMap();
 
     /**
      * 方法与参数缓存
      * <p>
      * key:方法全量名称字符串，value:方法名和参数
      * <p>
-     * 例如，对于方法{@link MLockAspect#doAround(org.aspectj.lang.ProceedingJoinPoint)}
+     * 例如，对于方法{@link LockAspect#doAround(org.aspectj.lang.ProceedingJoinPoint)}
      * <p>
-     * key = public java.lang.Object moon.mlock.aspect.MLockAspect.doAround(org.aspectj.lang.ProceedingJoinPoint)
+     * key = public java.lang.Object moon.mlock.aspect.LockAspect.doAround(org.aspectj.lang.ProceedingJoinPoint)
      * <p>
      * value = doAround(org.aspectj.lang.ProceedingJoinPoint)
      */
-    private final Map<String, String> mLockMethodParamsCache = Maps.newConcurrentMap();
+    private final Map<String, String> lockMethodParamsCache = Maps.newConcurrentMap();
 
     /**
      * 分布式锁切入点
      */
-    @Pointcut("@annotation(moon.mlock.annotation.MLock)")
+    @Pointcut("@annotation(moon.mlock.annotation.Lock)")
     public void mLockAspect() {
         // do nothing
     }
@@ -87,20 +87,20 @@ public class MLockAspect {
     @Around("mLockAspect()")
     public Object doAround(ProceedingJoinPoint joinPoint) throws Throwable {
         String lockKey = null;
-        Lock lock = null;
+        ILock lock = null;
         try {
             // 切入点处的签名
             MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
             Method method = methodSignature.getMethod();
 
-            MLock mLock = getMLock(method);
-            Assert.notNull(mLock, "获取@MLock注解失败！");
+            Lock mLock = getLock(method);
+            Assert.notNull(mLock, "获取@Lock注解失败！");
 
             lockKey = getLocalKey(joinPoint, mLock);
             String domain = mLock.domain();
             LockTypeEnum lockTypeEnum = mLock.lockType();
             long waitTime = mLock.waitTime();
-            lock = MLockFactory.getLock(lockTypeEnum, domain, lockKey);
+            lock = LockFactory.getLock(lockTypeEnum, domain, lockKey);
 
             //加锁
             boolean lockResult = lock.tryLock(waitTime, TimeUnit.MILLISECONDS);
@@ -119,13 +119,13 @@ public class MLockAspect {
                 return null;
             }
         } catch (GetLockException e) {
-            log.error("MLockAspect GetLockException, lockKey={}", lockKey, e);
+            log.error("LockAspect GetLockException, lockKey={}", lockKey, e);
             throw e;
-        } catch (MLockException e) {
-            log.error("MLockAspect Business Exception, lockKey={}", lockKey, e);
+        } catch (LockException e) {
+            log.error("LockAspect Business Exception, lockKey={}", lockKey, e);
             throw e;
         } catch (Exception e) {
-            log.error("MLockAspect Exception, lockKey={}", lockKey, e);
+            log.error("LockAspect Exception, lockKey={}", lockKey, e);
             throw e;
         } finally {
             //释放锁
@@ -139,14 +139,14 @@ public class MLockAspect {
      * 获取 local key
      *
      * @param joinPoint 切面的切入点信息
-     * @param mLock     mLock注解信息
+     * @param lock     mLock注解信息
      * @return local key
      */
-    private String getLocalKey(ProceedingJoinPoint joinPoint, MLock mLock) {
-        String[] keys = mLock.keys();
+    private String getLocalKey(ProceedingJoinPoint joinPoint, Lock lock) {
+        String[] keys = lock.keys();
         String[] keyValues = executeTemplate(keys, joinPoint);
         String key = String.join("_", keyValues);
-        return mLock.domain() + "_" + key;
+        return lock.domain() + "_" + key;
     }
 
     /**
@@ -161,7 +161,7 @@ public class MLockAspect {
         String methodLongName = joinPoint.getSignature().toLongString();
         // 参数名称数组
         Function<String, String[]> function = o -> discoverer.getParameterNames(getMethod(joinPoint));
-        String[] paramNames = mLockAspectParamNamesCache.computeIfAbsent(methodLongName, function);
+        String[] paramNames = lockAspectParamNamesCache.computeIfAbsent(methodLongName, function);
 
         // SpEL 的标准计算上下文
         StandardEvaluationContext context = new StandardEvaluationContext();
@@ -192,11 +192,11 @@ public class MLockAspect {
     private Method getMethod(ProceedingJoinPoint joinPoint) {
         String methodLongName = joinPoint.getSignature().toLongString();
         // 方法名称参数已缓存，则直接从缓存获取，反之则解析名称参数，并加入缓存
-        String methodNameAndParams = mLockMethodParamsCache.computeIfAbsent(methodLongName, AspectUtils::getMethodNameAndParams);
+        String methodNameAndParams = lockMethodParamsCache.computeIfAbsent(methodLongName, AspectUtils::getMethodNameAndParams);
         // 获取切点所在类的全部方法列表
         Method[] methods = joinPoint.getTarget().getClass().getMethods();
         for (Method method : methods) {
-            String targetMethodAndParam = mLockMethodParamsCache.computeIfAbsent(method.toString(), AspectUtils::getMethodNameAndParams);
+            String targetMethodAndParam = lockMethodParamsCache.computeIfAbsent(method.toString(), AspectUtils::getMethodNameAndParams);
             if (StringUtils.equals(methodNameAndParams, targetMethodAndParam)) {
                 return method;
             }
@@ -205,16 +205,16 @@ public class MLockAspect {
     }
 
     /**
-     * 获取MLock注解
+     * 获取Lock注解
      *
      * @param method 切面方法
-     * @return MLock注解
+     * @return Lock注解
      */
-    private MLock getMLock(Method method) {
+    private Lock getLock(Method method) {
         try {
-            return method.getAnnotation(MLock.class);
+            return method.getAnnotation(Lock.class);
         } catch (Exception e) {
-            log.error("getMLock from method ex:", e);
+            log.error("getLock from method ex:", e);
             return null;
         }
     }

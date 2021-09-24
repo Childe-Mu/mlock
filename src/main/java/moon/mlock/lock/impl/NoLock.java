@@ -1,6 +1,6 @@
 package moon.mlock.lock.impl;
 
-import moon.mlock.lock.Lock;
+import moon.mlock.lock.ILock;
 
 import java.util.concurrent.TimeUnit;
 
@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author moon
  */
-public class NoLock implements Lock {
+public class NoLock implements ILock {
 
     /**
      * 尝试加锁，

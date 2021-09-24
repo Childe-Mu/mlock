@@ -1,7 +1,7 @@
 package moon.mlock.annotation;
 
 import moon.mlock.common.enums.LockTypeEnum;
-import moon.mlock.common.exception.MLockException;
+import moon.mlock.common.exception.LockException;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface MLock {
+public @interface Lock {
     /**
      * 锁类型
      * <p>
@@ -70,18 +70,18 @@ public @interface MLock {
     /**
      * 失败时，抛出的异常类
      * <p>
-     * 非必须，默认 MLockException
+     * 非必须，默认 LockException
      *
      * @return 抛出的异常类
      */
-    Class<? extends MLockException> ex() default MLockException.class;
+    Class<? extends LockException> ex() default LockException.class;
 
     /**
      * 抛出Exception的message
      * <p>
      * 非必须，默认 其他操作正在处理中，请稍后再试！
      *
-     * @return message
+     * @return 异常提示信息
      */
     String exMsg() default "其他操作正在处理中，请稍后再试！";
 }

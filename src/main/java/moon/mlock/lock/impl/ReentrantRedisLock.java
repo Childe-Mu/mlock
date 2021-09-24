@@ -3,7 +3,7 @@ package moon.mlock.lock.impl;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import moon.mlock.common.consts.StringConst;
-import moon.mlock.lock.Lock;
+import moon.mlock.lock.ILock;
 import moon.mlock.proxy.RedisLockProxy;
 import moon.mlock.task.RedisLockKeyRenewTask;
 import moon.mlock.utils.SpringUtils;
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author moon
  */
 @Slf4j
-public class ReentrantRedisLock implements Lock {
+public class ReentrantRedisLock implements ILock {
 
     private static final Map<String, LockHolder> REDIS_LOCK_HOLDERS_MAP = Maps.newConcurrentMap();
 
@@ -119,9 +119,9 @@ public class ReentrantRedisLock implements Lock {
     @Override
     public boolean checkLock() {
         try {
-            boolean checkLockResult = proxy.checkRedisLock(key);
-            log.info("checkLock: domain={},key={},id={},checkLockResult={}", domain, key, id, checkLockResult);
-            return checkLockResult;
+            boolean check = proxy.checkRedisLock(key);
+            log.info("checkLock: domain={},key={},id={},checkLockResult={}", domain, key, id, check);
+            return check;
         } catch (Exception e) {
             log.error("checkLock Exception", e);
             return false;

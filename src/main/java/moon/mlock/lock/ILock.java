@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author moon
  */
-public interface Lock extends AutoCloseable {
+public interface ILock extends AutoCloseable {
     /**
      * 尝试加锁
      *

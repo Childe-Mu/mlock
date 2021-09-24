@@ -2,7 +2,7 @@ package moon.mlock.proxy;
 
 import lombok.extern.slf4j.Slf4j;
 import moon.mlock.common.consts.StringConst;
-import moon.mlock.config.MLockProperties;
+import moon.mlock.config.LockProperties;
 import moon.mlock.utils.LocalUtils;
 import moon.mlock.utils.SpringContextUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,16 +43,16 @@ public class RedisLockProxy {
      */
     private static final long REDIS_LOCK_KEY_EXPIRE_MILLIS = 60000L;
 
-    public RedisLockProxy(MLockProperties mLockProperties) {
+    public RedisLockProxy(LockProperties lockProperties) {
         // 具体如何取redisTemplate实例，需要根据项目具体设置，通常是 集群名称+RedisTemplate，如ShopRedisTemplate
-        redisTemplate = SpringContextUtils.getBean(mLockProperties.getRedisGroupName() + "RedisTemplate");
+        redisTemplate = SpringContextUtils.getBean(lockProperties.getRedisGroupName() + "RedisTemplate");
         // 初始化redis连接并测试
-        String key = "MLock-connect-test-" + System.currentTimeMillis();
+        String key = "ILock-connect-test-" + System.currentTimeMillis();
         redisTemplate.opsForValue().set(key, key);
         String val = redisTemplate.opsForValue().get(key);
-        log.info("MLock connect test: set={}, get={}", key, val);
+        log.info("ILock connect test: set={}, get={}", key, val);
         redisTemplate.delete(key);
-        log.info("Successfully initialized MLock redis connection");
+        log.info("Successfully initialized ILock redis connection");
     }
 
     /**

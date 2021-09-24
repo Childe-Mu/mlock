@@ -6,13 +6,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * MLock配置()
+ * Lock配置()
  *
  * @author moon
  */
 @SuppressWarnings("all")
 @ConfigurationProperties
-public class MLockProperties {
+public class LockProperties {
 
     /**
      * 项目名称
@@ -21,7 +21,7 @@ public class MLockProperties {
     private String applicationName;
 
     /**
-     * MLock-锁类型
+     * ILock-锁类型
      */
     @Value("${${moon.application.name}.mLock.type:redis}")
     private Integer mLockType;
@@ -33,11 +33,11 @@ public class MLockProperties {
     private String redisGroupName;
 
     /**
-     * 获取MLock锁类型
+     * 获取Lock锁类型
      *
      * @return
      */
-    public LockTypeEnum getMLockType() {
+    public LockTypeEnum getLockType() {
         return LockTypeEnum.getEnumByIndex(mLockType);
     }
 

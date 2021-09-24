@@ -2,27 +2,27 @@ package moon.mlock.factory;
 
 import moon.mlock.common.enums.LockTypeEnum;
 import moon.mlock.common.exception.GetLockException;
-import moon.mlock.config.MLockProperties;
-import moon.mlock.lock.Lock;
+import moon.mlock.config.LockProperties;
+import moon.mlock.lock.ILock;
 import moon.mlock.lock.impl.NoLock;
 import moon.mlock.lock.impl.ReentrantRedisLock;
 
 import java.util.Objects;
 
 /**
- * MLock工厂类
+ * Lock工厂类
  *
  * @author moon
  */
-public class MLockFactory {
+public class LockFactory {
 
     /**
-     * MLock配置中心配置数据，后期考虑可以从公共数据源的配置中心获取锁配置，配置中心的配置优先级可高于入参
+     * Lock配置中心配置数据，后期考虑可以从公共数据源的配置中心获取锁配置，配置中心的配置优先级可高于入参
      */
-    private static MLockProperties mLockProperties;
+    private static LockProperties lockProperties;
 
-    private MLockFactory(MLockProperties mLockProperties) {
-        MLockFactory.mLockProperties = mLockProperties;
+    private LockFactory(LockProperties lockProperties) {
+        LockFactory.lockProperties = lockProperties;
     }
 
     /**
@@ -34,8 +34,8 @@ public class MLockFactory {
      * @param lockKey  local key
      * @return 获取锁
      */
-    public static Lock getLock(LockTypeEnum lockType, String domain, String lockKey) throws GetLockException {
-        Lock lock;
+    public static ILock getLock(LockTypeEnum lockType, String domain, String lockKey) throws GetLockException {
+        ILock lock;
         switch (lockType) {
             case LOCK_NOTHING:
                 lock = new NoLock();
