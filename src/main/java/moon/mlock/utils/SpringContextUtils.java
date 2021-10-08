@@ -8,6 +8,8 @@ import java.util.Map;
 
 /**
  * 通过Spring上下文获取bean工具类
+ * <p>
+ * 文档见 ApplicationContextAware详解.md
  *
  * @author moon
  */
@@ -16,7 +18,7 @@ public class SpringContextUtils implements ApplicationContextAware {
     /**
      * Spring应用上下文环境
      */
-    private transient static ApplicationContext applicationContext;
+    private static ApplicationContext applicationContext;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
@@ -32,16 +34,10 @@ public class SpringContextUtils implements ApplicationContextAware {
         return (T) applicationContext.getBean(name);
     }
 
-    public static <T> T getBean(Class<T> clz) {
-        return applicationContext.getBean(clz);
+    public static <T> T getBean(Class<T> clazz) {
+        return applicationContext.getBean(clazz);
     }
 
-    /**
-     * 是否是共享单例
-     *
-     * @param name 要查询的 bean 的名称
-     * @return 此 bean 是否对应于单例实例
-     */
     public static boolean isSingleton(String name) {
         return applicationContext.isSingleton(name);
     }
@@ -59,23 +55,11 @@ public class SpringContextUtils implements ApplicationContextAware {
     }
 
     /**
-     * 初始化applicaitonContext
+     * 初始化ApplicationContext
+     *
+     * @param applicationContext 上下文
      */
     public static void initSpringContext(ApplicationContext applicationContext) {
         SpringContextUtils.applicationContext = applicationContext;
-    }
-
-    public static String getProjectBusiLine() {
-        if (applicationContext == null) {
-            throw new RuntimeException("spring初始化失败");
-        }
-        return applicationContext.getEnvironment().getProperty("application.businessLine");
-    }
-
-    public static String getProjectName() {
-        if (applicationContext == null) {
-            throw new RuntimeException("spring初始化失败");
-        }
-        return applicationContext.getEnvironment().getProperty("application.name");
     }
 }
