@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import moon.mlock.common.consts.StringConst;
 import moon.mlock.config.LockProperties;
 import moon.mlock.utils.LocalUtils;
-import moon.mlock.utils.SpringContextUtils;
+import moon.mlock.utils.SpringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -45,7 +45,7 @@ public class RedisLockProxy {
 
     public RedisLockProxy(LockProperties lockProperties) {
         // 具体如何取redisTemplate实例，需要根据项目具体设置，通常是 集群名称+RedisTemplate，如ShopRedisTemplate
-        redisTemplate = SpringContextUtils.getBean(lockProperties.getRedisGroupName() + "RedisTemplate");
+        redisTemplate = SpringUtils.getBean(lockProperties.getRedisGroupName() + "RedisTemplate");
         // 初始化redis连接并测试
         String key = "ILock-connect-test-" + System.currentTimeMillis();
         redisTemplate.opsForValue().set(key, key);

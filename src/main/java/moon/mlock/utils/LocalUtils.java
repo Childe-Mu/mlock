@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
@@ -28,6 +27,11 @@ public class LocalUtils {
      */
     public static final Random random = new Random();
 
+    /**
+     * 生成最大五位的随机数,位数不够补零
+     */
+    public static final int BOUND = (int) 1e6;
+
     private LocalUtils() {
     }
 
@@ -40,52 +44,51 @@ public class LocalUtils {
             return LOCAL_IP;
         }
         try {
-            //根据网卡取本机配置的IP
+            // 根据网卡取本机配置的IP
+            // 可以使用 getNetworkInterfaces()+getInetAddresses() 获取该节点的所有 IP 地址
             Enumeration<NetworkInterface> netInterfaces = NetworkInterface.getNetworkInterfaces();
-            String ip = null;
-            // 标签在Java中不常用，许多开发人员不了解它们是如何工作的。此外，它们的使用使控制流更难遵循，从而降低了代码的可读性。
-            // 网上搬运的代码，第一次知道java原来还有标签这个功能，看来确实不常用
-            // TODO 把这个修改一下，换掉标签
-            a:
             while (netInterfaces.hasMoreElements()) {
                 NetworkInterface ni = netInterfaces.nextElement();
                 Enumeration<InetAddress> ips = ni.getInetAddresses();
                 while (ips.hasMoreElements()) {
-                    InetAddress ipObj = ips.nextElement();
-                    if (ipObj.isSiteLocalAddress()) {
-                        ip = ipObj.getHostAddress();
-                        break a;
+                    InetAddress ip = ips.nextElement();
+                    if (ip.isSiteLocalAddress()) {
+                        return ip.getHostAddress();
                     }
                 }
             }
-            return ip;
         } catch (Exception e) {
             log.error("获取本机ip地址，异常：", e);
-            return null;
         }
+        return null;
     }
 
-
-    public static synchronized String getNextBatchID() {
+    /**
+     * 获取下一个id
+     *
+     * @return 下一个id
+     */
+    public static synchronized String getNextBatchId() {
         assert LOCAL_IP != null;
-        return LOCAL_IP.replace(".", "") + getDateStringMillisecond(new Date()) + getRandNum();
+        return LOCAL_IP.replace(".", "") + getCurrentTimeStr() + getRandNum();
     }
 
 
-    //生成最大 五 的随机数 ,位数不够补零
-    public static final int MAX_RANDOM_NUM = 99999;
-
+    /**
+     * 获取五位随机值
+     *
+     * @return 随机值
+     */
     public static String getRandNum() {
-        DecimalFormat df = new DecimalFormat("00000");
-        return df.format(random.nextInt(MAX_RANDOM_NUM + 1));
+        return String.format("%05d", random.nextInt(BOUND));
     }
 
-    public static String getDateStringMillisecond(Date date) {
-        SimpleDateFormat formatter = new SimpleDateFormat("MMddhhmmssSSS");
-        return formatter.format(date);
+    /**
+     * 获取当前时间戳字符串（格式：MMddhhmmssSSS）
+     *
+     * @return 当前时间戳字符串
+     */
+    public static String getCurrentTimeStr() {
+        return new SimpleDateFormat("MMddhhmmssSSS").format(new Date());
     }
-
-//    public static void main(String[] args) {
-//        System.out.println(getRandNum());
-//    }
 }

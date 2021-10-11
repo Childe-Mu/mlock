@@ -7,7 +7,6 @@ package moon.mlock.utils;
  */
 public class ThreadUtils {
     private ThreadUtils() {
-
     }
 
     /**

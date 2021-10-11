@@ -22,6 +22,15 @@ public class LockFactory {
     private static LockProperties lockProperties;
 
     private LockFactory(LockProperties lockProperties) {
+        initLockProperties(lockProperties);
+    }
+
+    /**
+     * 初始化属性
+     *
+     * @param lockProperties Lock配置中心配置数据
+     */
+    private static void initLockProperties(LockProperties lockProperties) {
         LockFactory.lockProperties = lockProperties;
     }
 
@@ -31,10 +40,10 @@ public class LockFactory {
      *
      * @param lockType 锁类型
      * @param domain   业务领域
-     * @param lockKey  local key
+     * @param key      local key
      * @return 获取锁
      */
-    public static ILock getLock(LockTypeEnum lockType, String domain, String lockKey) throws GetLockException {
+    public static ILock getLock(LockTypeEnum lockType, String domain, String key) throws GetLockException {
         ILock lock;
         switch (lockType) {
             case LOCK_NOTHING:
@@ -42,7 +51,7 @@ public class LockFactory {
                 break;
             case LOCK_REDIS:
             case LOCK_REDIS_FORCE:
-                lock = new ReentrantRedisLock(domain, lockKey);
+                lock = new ReentrantRedisLock(domain, key);
                 break;
             default:
                 lock = null;

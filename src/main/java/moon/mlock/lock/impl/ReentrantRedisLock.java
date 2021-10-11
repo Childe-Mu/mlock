@@ -56,7 +56,7 @@ public class ReentrantRedisLock implements ILock {
     private final String id;
 
     public ReentrantRedisLock(String domain, String key) {
-        this.proxy = SpringUtils.getObject(RedisLockProxy.class);
+        this.proxy = SpringUtils.getBean(RedisLockProxy.class);
         this.domain = domain;
         this.key = key;
         this.result = false;

@@ -4,9 +4,13 @@ import java.util.UUID;
 
 /**
  * UUIDUtils
+ *
  * @author moon
  */
 public class UUIDUtils {
+    private UUIDUtils() {
+    }
+
     /**
      * 获取一个UUID
      *

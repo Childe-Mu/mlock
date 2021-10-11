@@ -6,20 +6,33 @@
 
   <groupId>moon</groupId>
   <artifactId>mlock</artifactId>
-  <version>1.0-SNAPSHOT</version>
-
-  <name>mlock</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <version>${mlock.version}</version>
+  <packaging>jar</packaging>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
     <springframework.version>3.1.3.RELEASE</springframework.version>
-    <mlock-springboot-starter.version.test>1.0.0-SNAPSHOT</mlock-springboot-starter.version.test>
-    <mlock-springboot-starter.version.prod>1.0.0</mlock-springboot-starter.version.prod>
+    <mlock.version.test>1.0.0-SNAPSHOT</mlock.version.test>
+    <mlock.version.prod>1.0.0</mlock.version.prod>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>test</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <mlock.version>${mlock.version.test}</mlock.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>prod</id>
+      <properties>
+        <mlock.version>${mlock.version.prod}</mlock.version>
+      </properties>
+    </profile>
+  </profiles>
+
 
   <dependencies>
     <dependency>
@@ -97,14 +110,14 @@
       <version>1.9.6</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.12.0</version>
-    </dependency>
-    <dependency>
       <groupId>org.aspectj</groupId>
       <artifactId>aspectjweaver</artifactId>
       <version>1.9.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.12.0</version>
     </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
@@ -136,49 +149,40 @@
     </dependency>
   </dependencies>
 
+  <distributionManagement>
+    <repository>
+      <id>maven-releases</id>
+      <name>project release repository</name>
+      <url>http://maven.moon.tech/repository/maven-releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>maven-snapshots</id>
+      <name>project snapshot repository</name>
+      <url>http://maven.moon.tech/repository/maven-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <build>
-    <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
-      <plugins>
-        <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
-        <plugin>
-          <artifactId>maven-clean-plugin</artifactId>
-          <version>3.1.0</version>
-        </plugin>
-        <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
-        <plugin>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>3.0.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.1</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-jar-plugin</artifactId>
-          <version>3.0.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-install-plugin</artifactId>
-          <version>2.5.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.8.2</version>
-        </plugin>
-        <!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
-        <plugin>
-          <artifactId>maven-site-plugin</artifactId>
-          <version>3.7.1</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.0.0</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.0.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 </project>
