@@ -184,10 +184,10 @@ public class LockAspect {
     }
 
     /**
-     * 获取当前执行的方法（方法名+参数）
+     * 获取当前执行的方法
      *
      * @param joinPoint 切面的切入点信息
-     * @return 当前执行的方法（方法名+参数）
+     * @return 当前执行的方法
      */
     private Method getMethod(ProceedingJoinPoint joinPoint) {
         String methodLongName = joinPoint.getSignature().toLongString();
