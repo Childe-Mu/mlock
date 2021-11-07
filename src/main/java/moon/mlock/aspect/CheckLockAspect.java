@@ -9,7 +9,6 @@ import moon.mlock.common.exception.LockException;
 import moon.mlock.factory.LockFactory;
 import moon.mlock.lock.ILock;
 import moon.mlock.proxy.RedisLockProxy;
-import moon.mlock.utils.AspectUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -28,7 +27,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 /**
  * 分布式检查锁注解AOP切入点
@@ -55,19 +53,6 @@ public class CheckLockAspect {
      * key:方法全量名称字符串，value:方法的参数名称列表
      */
     private final Map<String, String[]> checkLockAspectParamNamesCache = Maps.newConcurrentMap();
-
-    /**
-     * 方法与参数缓存
-     * <p>
-     * key:方法全量名称字符串，value:方法名和参数
-     * <p>
-     * 例如，对于方法{@link LockAspect#doAround(org.aspectj.lang.ProceedingJoinPoint)}
-     * <p>
-     * key = public java.lang.Object moon.mlock.aspect.LockAspect.doAround(org.aspectj.lang.ProceedingJoinPoint)
-     * <p>
-     * value = doAround(org.aspectj.lang.ProceedingJoinPoint)
-     */
-    private final Map<String, String> checkLockMethodParamsCache = Maps.newConcurrentMap();
 
     @Autowired
     private RedisLockProxy proxy;
@@ -150,7 +135,10 @@ public class CheckLockAspect {
      */
     private String[] executeTemplate(String[] template, ProceedingJoinPoint joinPoint) {
         String methodLongName = joinPoint.getSignature().toLongString();
-        Function<String, String[]> function = o -> discoverer.getParameterNames(getMethod(joinPoint));
+        // 获取切入点处的方法
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        Method method = methodSignature.getMethod();
+        Function<String, String[]> function = o -> discoverer.getParameterNames(method);
         String[] paramNames = checkLockAspectParamNamesCache.computeIfAbsent(methodLongName, function);
         int len = paramNames.length;
         StandardEvaluationContext context = new StandardEvaluationContext();
@@ -167,26 +155,6 @@ public class CheckLockAspect {
             result[i] = value;
         }
         return result;
-    }
-
-    /**
-     * 获取当前执行的方法（方法名+参数）
-     *
-     * @param joinPoint 切面的切入点信息
-     * @return 当前执行的方法（方法名+参数）
-     */
-    private Method getMethod(ProceedingJoinPoint joinPoint) {
-        String methodLongName = joinPoint.getSignature().toLongString();
-        UnaryOperator<String> fun = AspectUtils::getMethodNameAndParams;
-        String methodNameAndParam = checkLockMethodParamsCache.computeIfAbsent(methodLongName, fun);
-        Method[] methods = joinPoint.getTarget().getClass().getMethods();
-        for (Method method : methods) {
-            String targetMethodAndParam = checkLockMethodParamsCache.computeIfAbsent(method.toString(), fun);
-            if (methodNameAndParam.equals(targetMethodAndParam)) {
-                return method;
-            }
-        }
-        return null;
     }
 
     /**

@@ -159,8 +159,11 @@ public class LockAspect {
     private String[] executeTemplate(String[] template, ProceedingJoinPoint joinPoint) {
         // 获取方法全量签名
         String methodLongName = joinPoint.getSignature().toLongString();
+        // 获取切入点处的方法
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        Method method = methodSignature.getMethod();
         // 参数名称数组
-        Function<String, String[]> function = o -> discoverer.getParameterNames(getMethod(joinPoint));
+        Function<String, String[]> function = o -> discoverer.getParameterNames(method);
         String[] paramNames = lockAspectParamNamesCache.computeIfAbsent(methodLongName, function);
 
         // SpEL 的标准计算上下文
@@ -181,27 +184,6 @@ public class LockAspect {
             result[i] = value;
         }
         return result;
-    }
-
-    /**
-     * 获取当前执行的方法
-     *
-     * @param joinPoint 切面的切入点信息
-     * @return 当前执行的方法
-     */
-    private Method getMethod(ProceedingJoinPoint joinPoint) {
-        String methodLongName = joinPoint.getSignature().toLongString();
-        // 方法名称参数已缓存，则直接从缓存获取，反之则解析名称参数，并加入缓存
-        String methodNameAndParams = lockMethodParamsCache.computeIfAbsent(methodLongName, AspectUtils::getMethodNameAndParams);
-        // 获取切点所在类的全部方法列表
-        Method[] methods = joinPoint.getTarget().getClass().getMethods();
-        for (Method method : methods) {
-            String targetMethodAndParam = lockMethodParamsCache.computeIfAbsent(method.toString(), AspectUtils::getMethodNameAndParams);
-            if (StringUtils.equals(methodNameAndParams, targetMethodAndParam)) {
-                return method;
-            }
-        }
-        return null;
     }
 
     /**

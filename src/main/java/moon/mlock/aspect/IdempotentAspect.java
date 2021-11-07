@@ -141,7 +141,10 @@ public class IdempotentAspect {
      */
     private String[] executeTemplate(String[] template, ProceedingJoinPoint joinPoint) {
         String methodLongName = joinPoint.getSignature().toLongString();
-        Function<String, String[]> function = o -> discoverer.getParameterNames(getMethod(joinPoint));
+        // 获取切入点处的方法
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        Method method = methodSignature.getMethod();
+        Function<String, String[]> function = o -> discoverer.getParameterNames(method);
         String[] paramNames = idempotentAspectParamNamesCache.computeIfAbsent(methodLongName, function);
         int len = paramNames.length;
         StandardEvaluationContext context = new StandardEvaluationContext();
@@ -158,26 +161,6 @@ public class IdempotentAspect {
             result[i] = value;
         }
         return result;
-    }
-
-    /**
-     * 获取当前执行的方法（方法名+参数）
-     *
-     * @param joinPoint 切面的切入点信息
-     * @return 当前执行的方法（方法名+参数）
-     */
-    private Method getMethod(ProceedingJoinPoint joinPoint) {
-        String methodLongName = joinPoint.getSignature().toLongString();
-        UnaryOperator<String> fun = AspectUtils::getMethodNameAndParams;
-        String methodNameAndParam = idempotentMethodParamsCache.computeIfAbsent(methodLongName, fun);
-        Method[] methods = joinPoint.getTarget().getClass().getMethods();
-        for (Method method : methods) {
-            String targetMethodAndParam = idempotentMethodParamsCache.computeIfAbsent(method.toString(), fun);
-            if (methodNameAndParam.equals(targetMethodAndParam)) {
-                return method;
-            }
-        }
-        return null;
     }
 
     /**
